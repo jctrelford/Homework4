@@ -1,0 +1,300 @@
+---
+title: "Homework 4"
+author: "John \"Caleb\" Trelford"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+UT EID: jct3538
+
+GitHub repo: https://github.com/jctrelford/Homework4
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message = FALSE, tidy=TRUE)
+```
+
+```{r, echo=FALSE, results = 'hide'}
+library(tidyverse)
+library(mosaic)
+```
+
+\newpage
+
+# Problem 1
+
+## Theory A
+
+### Claim
+
+Some people believe that gas stations charge more if they lack direct competition in sight.
+
+### Evidence
+
+
+```{r, echo=FALSE, results = 'hide'}
+GasPrices <- read.csv("GasPrices.csv")
+
+mean(Price ~ Competitors, data=GasPrices)
+diffmean(Price ~ Competitors, data=GasPrices) # Y-N
+
+boot_competitors = do(10000)*diffmean(Price ~ Competitors, data=resample(GasPrices))
+confint(boot_competitors, level=0.95)
+```
+
+Based on my best guess of \$`r round(diffmean(Price ~ Competitors, data=GasPrices),2)`, the difference in price between gas stations with and without direct competition in sight ($Y-N$) is somewhere between \$`r round(confint(boot_competitors, level=0.95)[,2],2)` and \$`r round(confint(boot_competitors, level=0.95)[,3],2)`, with 95% confidence. Because this confidence interval at the 5% level contains zero, this result is not statistically significant, which does not support the theory.
+
+### Conclusion
+
+This theory is unsupported by the data because there is no statistically significant evidence that gas stations charge more if they lack direct competition in sight.
+
+## Theory B
+
+### Claim
+
+Some people believe that the richer the area, the higher the gas prices.
+
+### Evidence
+
+```{r, echo=FALSE, results = 'hide'}
+lm_income = lm(Price ~ Income, data=GasPrices)
+coef(lm_income)
+
+boot_income = do(10000)*lm(Price ~ Income, data=resample(GasPrices))
+confint(boot_income, level = 0.95) %>% filter(name == "Income")
+```
+
+Based on my best guess of \$`r round(confint(boot_income, level = 0.95)[2,6],8)`, for each additional dollar of median household income in the ZIP code area, the price of gas increases by somewhere between \$`r round(confint(boot_income, level = 0.95)[2,2],8)` and \$`r round(confint(boot_income, level = 0.95)[2,3],8)`, with 95% confidence. Because this confidence interval at the 5% level does not contain zero, this result is statistically significant, which supports the theory.
+
+### Conclusion
+
+This theory is supported by the data because there is statistically significant evidence that gas stations in richer areas charge more.
+
+## Theory C
+
+### Claim
+
+Some people believe that gas stations at stoplights charge more.
+
+### Evidence
+
+```{r, echo=FALSE, results = 'hide'}
+mean(Price ~ Stoplight, data=GasPrices)
+diffmean(Price ~ Stoplight, data=GasPrices) # Y-N
+
+boot_stoplight = do(10000)*diffmean(Price ~ Stoplight, data=resample(GasPrices))
+confint(boot_stoplight, level = 0.95)
+```
+
+Based on my best guess of \$`r round(confint(boot_stoplight, level = 0.95)[,6],2)`, the difference in prices between gas stations that are and are not at stoplights ($Y-N$) is somewhere between \$`r round(confint(boot_stoplight, level = 0.95)[,2],2)` and \$`r round(confint(boot_stoplight, level = 0.95)[,3],2)`, with 95% confidence. Because this confidence interval at the 5% level contains zero, this result is not statistically significant, which does not support the theory.
+
+### Conclusion
+
+This theory is unsupported by the data because there is no statistically significant evidence that gas stations at stoplights charge more.
+
+## Theory D
+
+### Claim
+
+Some people believe that gas stations with direct highway access charge more.
+
+### Evidence
+
+```{r, echo=FALSE, results = 'hide'}
+mean(Price ~ Highway, data=GasPrices)
+diffmean(Price ~ Highway, data=GasPrices) # Y-N
+
+boot_highway = do(10000)*diffmean(Price ~ Highway, data=resample(GasPrices))
+confint(boot_highway, level = 0.95)
+```
+
+Based on my best guess of \$`r round(confint(boot_highway, level = 0.95)[,6],2)`, the difference in prices between gas stations with and without direct highway access ($Y-N$) is somewhere between \$`r round(confint(boot_highway, level = 0.95)[,2],2)` and \$`r round(confint(boot_highway, level=0.95)[,3],2)`, with 95% confidence. Because this confidence interval at the 5% level does not contain zero, this result is statistically significant, which supports the theory.
+
+### Conclusion
+
+This theory is supported by the data because there is statistically significant evidence that gas stations with direct highway access charge more.
+
+## Theory E
+
+### Claim
+
+Some people believe that Shell charges more than all other non-Shell brands.
+
+### Evidence
+
+```{r, echo=FALSE, results = 'hide'}
+# new variable to make analysis easier
+GasPrices = GasPrices %>%
+  mutate(isShell = (Brand == "Shell"))
+
+mean(Price ~ isShell, data=GasPrices)
+diffmean(Price ~ isShell, data=GasPrices) # TRUE-FALSE
+
+boot_shell = do(10000)*diffmean(Price ~ isShell, data=resample(GasPrices))
+confint(boot_shell, level = 0.95)
+```
+
+Based on my best guess of \$`r round(confint(boot_shell, level = 0.95)[,6],2)`, the difference in price between Shell and non-Shell brand gas stations ($TRUE-FALSE$) is somewhere between \$`r round(confint(boot_shell, level = 0.95)[,2],2)` and \$`r round(confint(boot_shell, level = 0.95)[,3],2)`, with 95% confidence. Because this confidence interval at the 5% level contains zero, this result is not statistically significant, which does not support the theory.
+
+### Conclusion
+
+This theory is unsupported by the data because there is no statistically significant evidence that Shell charges more than all other non-Shell brands.
+
+\newpage
+
+# Problem 2
+
+## Part A
+
+```{r, echo=FALSE, results = 'hide'}
+sclass <- read.csv("sclass.csv")
+
+sclass63amg <- sclass[sclass$year == 2011 & sclass$trim == "63 AMG",]
+
+mean(~mileage, data=sclass63amg) # sample mean
+
+# bootping
+boot_63amg = do(10000)*mean(~mileage, data=resample(sclass63amg))
+confint(boot_63amg, level=0.95)
+```
+
+Based on my best guess of `r round(mean(~mileage, data=sclass63amg))` miles, the true average mileage of 2011 S-Class 63 AMGs that were hitting the used-car market when this data was collected is somewhere between `r round(confint(boot_63amg, level=0.95)[,2])` miles and `r round(confint(boot_63amg, level=0.95)[,3])` miles, with 95% confidence.
+
+## Part B
+
+```{r, echo=FALSE, results = 'hide'}
+sclass550 <- sclass[sclass$year == 2014 & sclass$trim == "550",]
+
+# new variable
+sclass550 <- sclass550 %>%
+  mutate(isBlack = (color == "Black"))
+
+prop(~isBlack, data=sclass550)
+
+boot_550 = do(10000)*prop(~isBlack, data=resample(sclass550))
+confint(boot_550, level=0.95)
+```
+
+Based on my best guess of `r round(prop(~isBlack, data=sclass550),3)*100`%, the true population proportion of all 2014 S-Class 550s that were painted black is somewhere between `r round(confint(boot_550, level=0.95)[,2],3)*100`% and `r round(confint(boot_550, level=0.95)[,3],3)*100`%, with 95% confidence.
+
+\newpage
+
+# Problem 3
+
+## Part A
+
+### 1) Question
+
+I am trying to answer whether there is a statistically significant difference in mean viewer response of happiness between the shows "Living with Ed" and "My Name is Earl." If so, then I must identify which show has a greater mean viewer response for happiness.
+
+### 2) Approach
+
+```{r, echo=FALSE, results = 'hide'}
+nbc <- read.csv("nbc_pilotsurvey.csv")
+
+nbcedearl <- nbc[nbc$Show == "Living with Ed" | nbc$Show == "My Name is Earl",]
+mean(Q1_Happy ~ Show, data=nbcedearl)
+diffmean(Q1_Happy ~ Show, data=nbcedearl) # Earl-Ed
+
+boot_edearl = do(10000)*diffmean(Q1_Happy ~ Show, data=resample(nbcedearl))
+confint(boot_edearl, level = 0.95)
+```
+
+First, I made a filtered data set only containing the shows "Living with Ed" and "My Name is Earl." Then, I used mean() and diffmean() to analyze the sample and understand the order of subtraction for diffmean(). Then, I bootstrapped 10,000 diffmeans with do() and resample(). Finally, I calculated the 95% confidence interval with confint().
+
+### 3) Results
+
+Based on my best guess of `r round(confint(boot_edearl, level = 0.95)[,6],2)` points, the difference in mean viewer response of happiness between "Living with Ed" and "My Name is Earl" ($Earl-Ed$) is somewhere between `r round(confint(boot_edearl, level = 0.95)[,2],2)` points and `r round(confint(boot_edearl, level = 0.95)[,3],2)` points, with 95% confidence. Because this confidence interval at the 5% level contains zero, this result is not statistically significant. 
+
+### 4) Conclusion
+
+There is no reason to believe that either "Living with Ed" or "My Name is Earl" consistently produce a higher mean viewer response of happiness than the other because there is no statistically significant evidence for this happening.
+
+## Part B
+
+### 1) Question
+
+I am trying to answer whether there is a statistically significant difference in mean viewer response of annoyance between the shows "The Biggest Loser" and "The Apprentice: Los Angeles." If so, then I must identify which show has a greater mean viewer response for annoyance.
+
+### 2) Approach
+
+```{r, echo=FALSE, results = 'hide'}
+nbcreality <- nbc[nbc$Show == "The Biggest Loser" | nbc$Show == "The Apprentice: Los Angeles",]
+mean(Q1_Annoyed ~ Show, data=nbcreality)
+diffmean(Q1_Annoyed ~ Show, data=nbcreality) # Loser-Apprentice
+
+boot_reality = do(10000)*diffmean(Q1_Annoyed ~ Show, data=resample(nbcreality))
+confint(boot_reality, level = 0.95)
+```
+
+First, I made a filtered data set only containing the shows "The Biggest Loser" and "The Apprentice: Los Angeles." Then, I used mean() and diffmean() to analyze the sample and understand the order of subtraction for diffmean(). Then, I bootstrapped 10,000 diffmeans with do() and resample(). Finally, I calculated the 95% confidence interval with confint().
+
+### 3) Results
+
+Based on my best guess of `r round(confint(boot_reality, level = 0.95)[,3],2)`, the difference in mean viewer response of annoyance between "The Biggest Loser" and "The Apprentice: Los Angeles" ($Loser-Apprentice$) is somewhere between `r round(confint(boot_reality, level = 0.95)[,2],2)` points and `r round(confint(boot_reality, level = 0.95)[,3],2)` points, with 95% confidence. Because this confidence interval at the 5% level does not contain zero, this result is statistically significant.
+
+### 4) Conclusion
+
+There is reason to believe that "The Apprentice: Los Angeles" consistently produces a higher mean response of annoyance somewhere between `r abs(round(confint(boot_reality, level = 0.95)[,3],2))` points and `r abs(round(confint(boot_reality, level = 0.95)[,2],2))` points, with 95% confidence, than "The Biggest Loser" because there is statistically significant evidence for this happening.
+
+## Part C
+
+### 1) Question
+
+I am trying to answer what proportion of all American TV watchers we would expect to give a response of 4 or greater to the "Q2_Confusing" question for "Dancing with the Stars" with a 95% confidence interval.
+
+### 2) Approach
+
+```{r, echo=FALSE, results = 'hide'}
+nbcdancing <- nbc[nbc$Show == "Dancing with the Stars",]
+nbcdancing = nbcdancing %>%
+  mutate(isConfusing = (Q2_Confusing >= 4))
+
+prop(~isConfusing, data = nbcdancing)
+
+boot_dancing = do(10000)*prop(~isConfusing, data=resample(nbcdancing))
+confint(boot_dancing, level = 0.95)
+```
+
+First, I made a filtered data set only containing the show "Dancing with the Stars." Then, I created a variable isConfusing with mutate() for Q2 responses greater than or equal to 4 and calculated the proportion of the sample using prop(). Then, I bootstrapped 10,000 prop()s with do() and resample(). Finally, I calculated the 95% confidence interval with confint().
+
+### 3) Results
+
+Based on my best guess of `r round(prop(~isConfusing, data=nbcdancing),3)*100`% from the sample, the proportion of all American TV watchers we would expect to give a response of 4 or greater to the "Q2_Confusing" question is somewhere between `r round(confint(boot_dancing, level = 0.95)[,2],3)*100` and `r round(confint(boot_dancing, level = 0.95)[,3],3)*100`%, with 95% confidence. 
+
+### 4) Conclusion
+
+The proportion of all American TV watcher who are likely to find "Dancing with the Stars" confusing is not that large as the true population proportion is only somewhere between `r round(confint(boot_dancing, level = 0.95)[,2],3)*100`% and `r round(confint(boot_dancing, level = 0.95)[,3],3)*100`%, with 95% confidence.
+
+\newpage
+
+# Problem 4
+
+## 1) Question
+
+I am trying to answer whether there is a statistically significant difference in the revenue ratio, the ratio of revenue after to revenue before for each DMA (designated market area), between DMAs in the treatment group and DMAs in the control group. I am supposed to provide a 95% confidence interval to support my findings as well as explain how if they support the idea that paid search advertising on Google creates extra revenue for EBay.
+
+## 2) Approach
+
+```{r, echo=FALSE, results = 'hide'}
+ebay <- read.csv("ebay.csv")
+
+# no need to use mutate() to define revenue ratio because it was already in ebay.csv
+
+mean(rev_ratio ~ adwords_pause, data=ebay)
+diffmean(rev_ratio ~ adwords_pause, data=ebay) # 1-0 (treatment-control)
+
+boot_ratio = do(10000)*diffmean(rev_ratio ~ adwords_pause, data=resample(ebay))
+confint(boot_ratio, level = 0.95)
+```
+
+First, I used mean() and diffmean() to analyze the sample and understand the order of subtraction for diffmean(). Then, I bootstrapped 10,000 diffmeans with do() and resample(). Finally, I calculated the 95% confidence interval with confint().
+
+## 3) Results
+
+Based on my best guess of `r round(confint(boot_ratio, level = 0.95)[,6],3)`, the difference in the revenue ratio between DMAs in the treatment group and DMAs in the control group ($treatment-control$) is somewhere between `r round(confint(boot_ratio, level = 0.95)[,2],3)` and `r round(confint(boot_ratio, level = 0.95)[,3],3)`, with 95% confidence. Because this confidence interval at the 5% level does not contain zero, this result is statistically significant.
+
+## 4) Conclusion
+
+There is reason to believe that EBay's paid search advertising on Google was driving extra revenue because the difference in the revenue ratio between DMAs in the treatment group and DMAs in the control group is statistically significant. Specifically, EBay's paid search advertising on Google leads to revenue ratios somewhere between `r abs(round(confint(boot_ratio, level = 0.95)[,3],3))` and `r abs(round(confint(boot_ratio, level = 0.95)[,2],3))` higher, with 95% confidence.
